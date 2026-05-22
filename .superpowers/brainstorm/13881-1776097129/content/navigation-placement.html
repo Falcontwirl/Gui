@@ -1,0 +1,36 @@
+<h2>Where should "My Projects" live in the navigation?</h2>
+<p class="subtitle">Consider: how often will users switch between projects, and where does it feel natural?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>TopBar button (always visible in explorer)</h3>
+      <p>A small "Projects" button in the explorer's top bar, next to the existing Home and Profile buttons. Clicking it opens a dropdown or navigates to a project list page. Always one click away while exploring.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Replace the Upload screen as the main hub</h3>
+      <p>The /upload page becomes a combined "dashboard" — your recent projects at the top, then the upload/GitHub URL input below. This is what you see after signing in. No new route needed.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Dedicated /projects route + nav link</h3>
+      <p>A standalone page at /projects showing all your analyzed codebases as cards with name, framework, date, concept count. Linked from the landing page navbar, the upload screen, and the explorer top bar.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="d" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>Option B + A combined (Recommended)</h3>
+      <p>The upload screen becomes the hub (recent projects + upload below), AND there's a small "Projects" link in the explorer top bar to get back to it. Best of both: natural entry point + always accessible.</p>
+    </div>
+  </div>
+</div>

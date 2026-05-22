@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Codebase Explorer — How It Works</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Base ─────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-base: #0a0a14;
+      --bg-surface: #12131f;
+      --bg-elevated: #1a1b2e;
+      --bg-accent: #232442;
+      --border-subtle: rgba(255,255,255,0.06);
+      --border-visible: rgba(255,255,255,0.12);
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-tertiary: #64748b;
+      --indigo: #6366f1;
+      --amber: #f59e0b;
+      --emerald: #10b981;
+      --cyan: #06b6d4;
+      --rose: #f43f5e;
+      --violet: #8b5cf6;
+      --orange: #f97316;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-family: 'DM Sans', sans-serif;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* ── Hero ──────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      animation: pulse 6s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: .6; }
+      50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+    }
+
+    .hero h1 {
+      font-size: clamp(2.4rem, 6vw, 4rem);
+      font-weight: 700;
+      letter-spacing: -1px;
+      line-height: 1.15;
+      position: relative;
+    }
+
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--indigo), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      max-width: 540px;
+      color: var(--text-secondary);
+      font-size: 1.15rem;
+      margin-top: 20px;
+      position: relative;
+    }
+
+    .scroll-hint {
+      margin-top: 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-tertiary);
+      font-size: .85rem;
+      animation: bob 2s ease-in-out infinite;
+      position: relative;
+    }
+
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(8px); }
+    }
+
+    .scroll-hint svg { opacity: .5; }
+
+    /* ── Layout ────────────────────────────────────── */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    section {
+      padding: 100px 0;
+    }
+
+    section + section {
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    h2 {
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      font-weight: 700;
+      letter-spacing: -.5px;
+      margin-bottom: 12px;
+    }
+
+    h2 .num {
+      color: var(--indigo);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .85em;
+      margin-right: 8px;
+    }
+
+    .section-sub {
+      color: var(--text-secondary);
+      font-size: 1.05rem;
+      max-width: 640px;
+      margin-bottom: 48px;
+    }
+
+    /* ── Cards ─────────────────────────────────────── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 28px 24px;
+      transition: border-color .2s, box-shadow .2s, transform .2s;
+    }
+
+    .card:hover {
+      border-color: var(--border-visible);
+      box-shadow: 0 4px 32px rgba(0,0,0,.3);
+      transform: translateY(-2px);
+    }
+
+    .card-icon {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 18px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .card h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      color: var(--text-secondary);
+      font-size: .92rem;
+      line-height: 1.6;
+    }
+
+    /* ── Diagram containers ────────────────────────── */
+    .diagram {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 40px 24px;
+      margin: 40px 0;
+      overflow-x: auto;
+    }
+
+    .diagram svg {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .diagram-caption {
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: .82rem;
+      margin-top: 18px;
+    }
+
+    /* ── Flow steps ────────────────────────────────── */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      position: relative;
+    }
+
+    .flow-step {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      position: relative;
+      padding-bottom: 48px;
+    }
+
+    .flow-step:last-child { padding-bottom: 0; }
+
+    .flow-marker {
+      flex-shrink: 0;
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      font-size: .95rem;
+      color: #fff;
+      position: relative;
+      z-index: 2;
+    }
+
+    .flow-step:not(:last-child) .flow-marker::after {
+      content: '';
+      position: absolute;
+      top: 48px;
+      left: 50%;
+      width: 2px;
+      height: calc(100% + 0px);
+      background: var(--border-visible);
+      transform: translateX(-50%);
+      z-index: 1;
+    }
+
+    .flow-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 23px;
+      top: 48px;
+      width: 2px;
+      height: calc(100% - 48px);
+      background: linear-gradient(to bottom, var(--border-visible), transparent);
+    }
+
+    .flow-body h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      margin-top: 10px;
+    }
+
+    .flow-body p {
+      color: var(--text-secondary);
+      font-size: .95rem;
+    }
+
+    /* ── Code block ────────────────────────────────── */
+    .code-block {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 20px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .82rem;
+      line-height: 1.7;
+      overflow-x: auto;
+      color: var(--text-secondary);
+      margin: 24px 0;
+    }
+
+    .code-block .keyword { color: var(--violet); }
+    .code-block .string { color: var(--emerald); }
+    .code-block .comment { color: var(--text-tertiary); }
+    .code-block .fn { color: var(--cyan); }
+    .code-block .type { color: var(--amber); }
+
+    /* ── Layer diagram ─────────────────────────────── */
+    .layers {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 40px 0;
+    }
+
+    .layer {
+      border-radius: 12px;
+      padding: 24px 28px;
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      transition: transform .2s, box-shadow .2s;
+    }
+
+    .layer:hover {
+      transform: translateX(6px);
+      box-shadow: 0 4px 24px rgba(0,0,0,.25);
+    }
+
+    .layer-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      flex-shrink: 0;
+      width: 100px;
+      text-align: right;
+    }
+
+    .layer-content h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .layer-content p {
+      color: var(--text-secondary);
+      font-size: .88rem;
+    }
+
+    /* ── Tech pills ────────────────────────────────── */
+    .tech-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 32px 0;
+    }
+
+    .pill {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 100px;
+      padding: 8px 18px;
+      font-size: .85rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: border-color .2s, background .2s;
+    }
+
+    .pill:hover {
+      border-color: var(--border-visible);
+      background: var(--bg-accent);
+    }
+
+    .pill-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Folder tree ───────────────────────────────── */
+    .tree {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .85rem;
+      line-height: 2;
+      color: var(--text-secondary);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin: 32px 0;
+    }
+
+    .tree .folder { color: var(--amber); font-weight: 600; }
+    .tree .file { color: var(--text-tertiary); }
+    .tree .highlight { color: var(--cyan); }
+    .tree .desc { color: var(--text-tertiary); font-size: .78rem; }
+
+    /* ── Footer ────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--text-tertiary);
+      font-size: .85rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    /* ── Responsive ────────────────────────────────── */
+    @media (max-width: 640px) {
+      section { padding: 64px 0; }
+      .flow-step { gap: 16px; }
+      .flow-marker { width: 40px; height: 40px; font-size: .85rem; }
+      .layer { flex-direction: column; gap: 8px; align-items: flex-start; }
+      .layer-label { text-align: left; width: auto; }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ════════ HERO ════════ -->
+  <div class="hero">
+    <h1>How <span>Codebase Explorer</span><br/>Actually Works</h1>
+    <p>A plain-English tour of every moving piece — explained so simply, a 5th grader could follow along.</p>
+    <div class="scroll-hint">
+      Scroll to explore
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+    </div>
+  </div>
+
+  <!-- ════════ 1 — THE BIG IDEA ════════ -->
+  <section>
+    <div class="container">
+      <h2><span class="num">01</span> The Big Idea</h2>
+      <p class="section-sub">
+        Imagine you find a giant LEGO set somebody else built. There are thousands of pieces and no instruction manual. You'd have no idea where to start, right?
+      </p>
+      <p class="section-sub">
+        <strong>Codebase Explorer</strong> is like a magic magnifying glass for code. You give it a zip file of any codebase, and it turns all that confusing code into a <em>colorful, interactive bubble map</em> you can click around to understand what everything does — no coding skills needed.
+      </p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg">
+          <!-- zip file -->
+          <rect x="20" y="60" width="140" height="100" rx="14" fill="#1a1b2e" stroke="#6366f1" stroke-width="2"/>
+          <text x="90" y="100" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600">your-code.zip</text>
+          <text x="90" y="122" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="11">hundreds of files</text>
+          <text x="90" y="140" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="11">you don't understand</text>
+
+          <!-- arrow 1 -->
+          <line x1="170" y1="110" x2="270" y2="110" stroke="#6366f1" stroke-width="2" stroke-dasharray="6 4"/>
+          <polygon points="270,104 282,110 270,116" fill="#6366f1"/>
+
+          <!-- brain (AI) -->
+          <rect x="290" y="48" width="180" height="124" rx="14" fill="#232442" stroke="#8b5cf6" stroke-width="2"/>
+          <text x="380" y="88" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans, sans-serif" font-size="14" font-weight="700">AI Brain</text>
+          <text x="380" y="110" text-anchor="middle" fill="#94a3b8" font-family="DM Sans, sans-serif" font-size="11">reads every file</text>
+          <text x="380" y="128" text-anchor="middle" fill="#94a3b8" font-family="DM Sans, sans-serif" font-size="11">figures out the concepts</text>
+          <text x="380" y="146" text-anchor="middle" fill="#94a3b8" font-family="DM Sans, sans-serif" font-size="11">finds connections</text>
+
+          <!-- arrow 2 -->
+          <line x1="480" y1="110" x2="558" y2="110" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="6 4"/>
+          <polygon points="558,104 570,110 558,116" fill="#8b5cf6"/>
+
+          <!-- bubble map -->
+          <rect x="578" y="48" width="160" height="124" rx="14" fill="#1a1b2e" stroke="#06b6d4" stroke-width="2"/>
+          <circle cx="628" cy="95" r="18" fill="rgba(99,102,241,0.25)" stroke="#6366f1" stroke-width="1.5"/>
+          <circle cx="670" cy="82" r="12" fill="rgba(16,185,129,0.25)" stroke="#10b981" stroke-width="1.5"/>
+          <circle cx="700" cy="105" r="15" fill="rgba(245,158,11,0.25)" stroke="#f59e0b" stroke-width="1.5"/>
+          <circle cx="650" cy="125" r="10" fill="rgba(244,63,94,0.25)" stroke="#f43f5e" stroke-width="1.5"/>
+          <line x1="640" y1="95" x2="665" y2="85" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <line x1="640" y1="100" x2="690" y2="105" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <line x1="668" y1="90" x2="695" y2="100" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <text x="658" y="156" text-anchor="middle" fill="#06b6d4" font-family="DM Sans, sans-serif" font-size="11" font-weight="600">Interactive Map!</text>
+        </svg>
+        <p class="diagram-caption">Your confusing code goes in, a beautiful visual map comes out.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ 2 — THE TECH STACK ════════ -->
+  <section>
+    <div class="container">
+      <h2><span class="num">02</span> The Tool Belt</h2>
+      <p class="section-sub">
+        Every builder needs tools. Here's what Codebase Explorer uses — think of each one as a different tool in a workshop.
+      </p>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon" style="background: linear-gradient(135deg, #06b6d4, #6366f1);">R</div>
+          <h3>React</h3>
+          <p>The building blocks. Every button, panel, and bubble on screen is a little React "component" — like a LEGO brick you can snap together.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon" style="background: linear-gradient(135deg, #f59e0b, #f97316);">V</div>
+          <h3>Vite</h3>
+          <p>The super-fast delivery truck. When you change code, Vite instantly refreshes the page — no waiting around.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon" style="background: linear-gradient(135deg, #8b5cf6, #6366f1);">C</div>
+          <h3>Claude AI</h3>
+          <p>The brains. Claude reads every file and figures out <em>what the code actually means</em> — like a really smart tutor that never gets tired.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon" style="background: linear-gradient(135deg, #10b981, #06b6d4);">D3</div>
+          <h3>D3-Force</h3>
+          <p>The physics engine. It makes the bubbles push and pull each other like magnets so related things end up close together.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon" style="background: linear-gradient(135deg, #f43f5e, #f97316);">Z</div>
+          <h3>Zustand</h3>
+          <p>The memory. It keeps track of what you've clicked, which view you're on, and what's selected — like the game's save file.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon" style="background: linear-gradient(135deg, #06b6d4, #10b981);">H</div>
+          <h3>Hono</h3>
+          <p>The gatekeeper. A tiny server that safely passes your data to Claude AI and back — so your secret API keys stay hidden.</p>
+        </div>
+      </div>
+
+      <p style="color: var(--text-tertiary); font-size: .88rem; margin-top: 32px;">Plus: Tailwind CSS for styling, Framer Motion for animations, JSZip for opening zip files in the browser, TypeScript for catching bugs early.</p>
+    </div>
+  </section>
+
+  <!-- ════════ 3 — FOLDER MAP ════════ -->
+  <section>
+    <div class="container">
+      <h2><span class="num">03</span> What's in Each Folder</h2>
+      <p class="section-sub">
+        If the project were a school, each folder would be a different classroom — each with its own job.
+      </p>
+
+      <div class="tree">
+<span class="folder">codebase-explorer/</span>
+├── <span class="folder">src/</span> <span class="desc">  &larr; all the frontend code lives here</span>
+│   ├── <span class="folder">components/</span> <span class="desc">  &larr; every screen and UI piece (buttons, panels, graphs)</span>
+│   ├── <span class="folder">store/</span> <span class="desc">  &larr; the app's "brain" — remembers what you clicked</span>
+│   ├── <span class="folder">data/</span> <span class="desc">  &larr; a sample Instagram project to demo without upload</span>
+│   ├── <span class="folder">utils/</span> <span class="desc">  &larr; helper tools: file parsing, graph physics, AI calls</span>
+│   └── <span class="highlight">App.tsx</span> <span class="desc">  &larr; the main entry point that ties everything together</span>
+├── <span class="folder">server/</span> <span class="desc">  &larr; the backend — talks to Claude AI for you</span>
+│   └── <span class="highlight">index.ts</span> <span class="desc">  &larr; one file that handles all API requests</span>
+├── <span class="file">package.json</span> <span class="desc">  &larr; list of all tools used + how to run the app</span>
+├── <span class="file">vite.config.ts</span> <span class="desc">  &larr; settings for the Vite build tool</span>
+└── <span class="file">tsconfig.json</span> <span class="desc">  &larr; settings for TypeScript</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ 4 — THE JOURNEY ════════ -->
+  <section>
+    <div class="container">
+      <h2><span class="num">04</span> The Journey of Your Code</h2>
+      <p class="section-sub">
+        Here's exactly what happens from the moment you upload a zip file to the moment you see the bubble map. Think of it like a relay race with 6 runners.
+      </p>
+
+      <div class="flow">
+        <!-- Step 1 -->
+        <div class="flow-step">
+          <div class="flow-marker" style="background: linear-gradient(135deg, var(--indigo), var(--violet));">1</div>
+          <div class="flow-body">
+            <h3>You drop a .zip file</h3>
+            <p>You drag your project zip onto the upload screen. The browser catches it — nothing goes to a server yet.</p>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="flow-step">
+          <div class="flow-marker" style="background: linear-gradient(135deg, var(--violet), var(--rose));">2</div>
+          <div class="flow-body">
+            <h3>JSZip unpacks everything</h3>
+            <p>A library called JSZip opens the zip <em>right inside your browser</em> — like unzipping a backpack. It reads every file and builds a list of file names + contents.</p>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="flow-step">
+          <div class="flow-marker" style="background: linear-gradient(135deg, var(--rose), var(--orange));">3</div>
+          <div class="flow-body">
+            <h3>The file parser finds connections</h3>
+            <p>A helper scans each file for <code>import</code> statements — lines where one file says "I need that other file." This reveals which files depend on each other.</p>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="flow-step">
+          <div class="flow-marker" style="background: linear-gradient(135deg, var(--orange), var(--amber));">4</div>
+          <div class="flow-body">
+            <h3>Claude AI reads and understands</h3>
+            <p>The file list and code samples are sent to Claude (through the Hono server). Claude reads everything and returns: <strong>concepts</strong> (like "Authentication" or "Database"), <strong>descriptions</strong> of each file, and <strong>connections</strong> between concepts.</p>
+          </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="flow-step">
+          <div class="flow-marker" style="background: linear-gradient(135deg, var(--amber), var(--emerald));">5</div>
+          <div class="flow-body">
+            <h3>D3-Force lays out the graph</h3>
+            <p>The concepts become bubbles, and D3's physics engine simulates magnets — related bubbles pull together, unrelated ones push apart — until everything settles into a nice layout.</p>
+          </div>
+        </div>
+
+        <!-- Step 6 -->
+        <div class="flow-step">
+          <div class="flow-marker" style="background: linear-gradient(135deg, var(--emerald), var(--cyan));">6</div>
+          <div class="flow-body">
+            <h3>Canvas paints the picture</h3>
+            <p>A custom HTML5 Canvas renderer draws the bubbles, glowing edges, and animations on screen. You can click, zoom, and explore!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Full pipeline diagram -->
+      <div class="diagram">
+        <svg viewBox="0 0 760 340" xmlns="http://www.w3.org/2000/svg">
+          <!-- Row 1: Upload to Parse -->
+          <rect x="20" y="20" width="120" height="68" rx="10" fill="#1a1b2e" stroke="#6366f1" stroke-width="1.5"/>
+          <text x="80" y="50" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="12" font-weight="600">Upload</text>
+          <text x="80" y="68" text-anchor="middle" fill="#64748b" font-family="DM Sans" font-size="10">.zip file</text>
+
+          <line x1="148" y1="54" x2="192" y2="54" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="4 3"/><polygon points="190,49 200,54 190,59" fill="#6366f1"/>
+
+          <rect x="205" y="20" width="120" height="68" rx="10" fill="#1a1b2e" stroke="#8b5cf6" stroke-width="1.5"/>
+          <text x="265" y="50" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="12" font-weight="600">JSZip</text>
+          <text x="265" y="68" text-anchor="middle" fill="#64748b" font-family="DM Sans" font-size="10">unpack files</text>
+
+          <line x1="333" y1="54" x2="377" y2="54" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="4 3"/><polygon points="375,49 385,54 375,59" fill="#8b5cf6"/>
+
+          <rect x="390" y="20" width="120" height="68" rx="10" fill="#1a1b2e" stroke="#f43f5e" stroke-width="1.5"/>
+          <text x="450" y="50" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="12" font-weight="600">File Parser</text>
+          <text x="450" y="68" text-anchor="middle" fill="#64748b" font-family="DM Sans" font-size="10">find imports</text>
+
+          <!-- Angled arrow down to AI -->
+          <path d="M510 88 L510 120 L450 120 L450 148" stroke="#f43f5e" stroke-width="1.5" stroke-dasharray="4 3" fill="none"/>
+          <polygon points="445,146 450,156 455,146" fill="#f43f5e"/>
+
+          <!-- Row 2: AI (center, wide) -->
+          <rect x="290" y="160" width="180" height="80" rx="12" fill="#232442" stroke="#f59e0b" stroke-width="2"/>
+          <text x="380" y="193" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="14" font-weight="700">Claude AI</text>
+          <text x="380" y="213" text-anchor="middle" fill="#94a3b8" font-family="DM Sans" font-size="10">concepts + descriptions</text>
+          <text x="380" y="227" text-anchor="middle" fill="#94a3b8" font-family="DM Sans" font-size="10">+ relationships</text>
+
+          <!-- Hono proxy label -->
+          <rect x="545" y="172" width="90" height="36" rx="8" fill="#1a1b2e" stroke="#06b6d4" stroke-width="1"/>
+          <text x="590" y="195" text-anchor="middle" fill="#06b6d4" font-family="JetBrains Mono" font-size="9" font-weight="600">Hono proxy</text>
+          <line x1="470" y1="195" x2="543" y2="195" stroke="#06b6d4" stroke-width="1" stroke-dasharray="3 3"/>
+
+          <!-- Arrow down to D3 -->
+          <path d="M380 240 L380 275" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <polygon points="375,273 380,283 385,273" fill="#f59e0b"/>
+
+          <!-- Row 3: D3 + Canvas -->
+          <rect x="210" y="285" width="140" height="48" rx="10" fill="#1a1b2e" stroke="#10b981" stroke-width="1.5"/>
+          <text x="280" y="314" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="12" font-weight="600">D3-Force layout</text>
+
+          <line x1="358" y1="309" x2="402" y2="309" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4 3"/><polygon points="400,304 410,309 400,314" fill="#10b981"/>
+
+          <rect x="415" y="285" width="140" height="48" rx="10" fill="#1a1b2e" stroke="#06b6d4" stroke-width="1.5"/>
+          <text x="485" y="314" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="12" font-weight="600">Canvas render</text>
+
+          <line x1="563" y1="309" x2="607" y2="309" stroke="#06b6d4" stroke-width="1.5" stroke-dasharray="4 3"/><polygon points="605,304 615,309 605,314" fill="#06b6d4"/>
+
+          <!-- Final: You see it! -->
+          <rect x="620" y="280" width="120" height="58" rx="12" fill="rgba(99,102,241,0.12)" stroke="#6366f1" stroke-width="2"/>
+          <text x="680" y="306" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="13" font-weight="700">You see it!</text>
+          <text x="680" y="324" text-anchor="middle" fill="#6366f1" font-family="DM Sans" font-size="10">interactive map</text>
+
+          <!-- Browser box around left side -->
+          <rect x="8" y="8" width="524" height="92" rx="14" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1" stroke-dasharray="6 4"/>
+          <text x="530" y="25" fill="#64748b" font-family="DM Sans" font-size="9">happens in your browser</text>
+
+        </svg>
+        <p class="diagram-caption">The complete pipeline — from zip upload to interactive visualization.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ 5 — THREE VIEWS ════════ -->
+  <section>
+    <div class="container">
+      <h2><span class="num">05</span> Three Ways to Explore</h2>
+      <p class="section-sub">
+        Once your code is analyzed, you get three "zoom levels" — like Google Maps switching between country, city, and street view.
+      </p>
+
+      <div class="layers">
+        <!-- Concept Map -->
+        <div class="layer" style="background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(99,102,241,0.02)); border-color: rgba(99,102,241,0.2);">
+          <span class="layer-label" style="color: var(--indigo);">Zoom Out</span>
+          <div class="layer-content">
+            <h3 style="color: var(--indigo);">Concept Map</h3>
+            <p>The bird's-eye view. Big colorful bubbles represent ideas like "Authentication" or "Database." Bigger bubble = more files inside. Lines between bubbles show which ideas are related. This is the first thing you see.</p>
+          </div>
+        </div>
+
+        <!-- Files View -->
+        <div class="layer" style="background: linear-gradient(135deg, rgba(139,92,246,0.08), rgba(139,92,246,0.02)); border-color: rgba(139,92,246,0.2);">
+          <span class="layer-label" style="color: var(--violet);">Zoom In</span>
+          <div class="layer-content">
+            <h3 style="color: var(--violet);">Files View</h3>
+            <p>Click a concept bubble and it "opens up" to show every file inside. Files that import each other are connected by lines. You can see exactly which file talks to which.</p>
+          </div>
+        </div>
+
+        <!-- Code Walkthrough -->
+        <div class="layer" style="background: linear-gradient(135deg, rgba(6,182,212,0.08), rgba(6,182,212,0.02)); border-color: rgba(6,182,212,0.2);">
+          <span class="layer-label" style="color: var(--cyan);">Street View</span>
+          <div class="layer-content">
+            <h3 style="color: var(--cyan);">Code Walkthrough</h3>
+            <p>Click a file to open it. The left side shows the actual code, the right side shows a plain-English explanation written by Claude AI. You can even chat and ask questions about the code!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Views diagram -->
+      <div class="diagram">
+        <svg viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg">
+          <!-- Concept Map box -->
+          <rect x="20" y="30" width="210" height="140" rx="12" fill="#12131f" stroke="#6366f1" stroke-width="1.5"/>
+          <text x="125" y="24" text-anchor="middle" fill="#6366f1" font-family="JetBrains Mono" font-size="10" font-weight="600">CONCEPT MAP</text>
+          <circle cx="70" cy="90" r="24" fill="rgba(99,102,241,0.2)" stroke="#6366f1" stroke-width="1.5"/>
+          <text x="70" y="94" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="8" font-weight="600">Auth</text>
+          <circle cx="155" cy="80" r="18" fill="rgba(16,185,129,0.2)" stroke="#10b981" stroke-width="1.5"/>
+          <text x="155" y="84" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="8" font-weight="600">API</text>
+          <circle cx="130" cy="130" r="16" fill="rgba(245,158,11,0.2)" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="130" y="134" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="7" font-weight="600">DB</text>
+          <line x1="90" y1="90" x2="140" y2="82" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+          <line x1="150" y1="95" x2="135" y2="118" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+          <line x1="85" y1="105" x2="118" y2="120" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+
+          <!-- Arrow -->
+          <text x="260" y="105" fill="#64748b" font-family="DM Sans" font-size="11">click</text>
+          <line x1="285" y1="108" x2="285" y2="108" stroke="none"/>
+          <path d="M248 100 Q270 100 280 100" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3 3" fill="none"/>
+          <polygon points="280,95 292,100 280,105" fill="#64748b"/>
+
+          <!-- Files View box -->
+          <rect x="296" y="30" width="195" height="140" rx="12" fill="#12131f" stroke="#8b5cf6" stroke-width="1.5"/>
+          <text x="393" y="24" text-anchor="middle" fill="#8b5cf6" font-family="JetBrains Mono" font-size="10" font-weight="600">FILES VIEW</text>
+          <!-- Dashed cluster -->
+          <rect x="310" y="50" width="166" height="106" rx="8" fill="none" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4 3" opacity=".4"/>
+          <rect x="320" y="65" width="70" height="22" rx="5" fill="#1a1b2e" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+          <text x="355" y="80" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="8">login.ts</text>
+          <rect x="400" y="65" width="70" height="22" rx="5" fill="#1a1b2e" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+          <text x="435" y="80" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="8">auth.ts</text>
+          <rect x="320" y="100" width="70" height="22" rx="5" fill="#1a1b2e" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+          <text x="355" y="115" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="8">token.ts</text>
+          <line x1="390" y1="76" x2="400" y2="76" stroke="rgba(139,92,246,0.4)" stroke-width="1"/>
+          <line x1="355" y1="87" x2="355" y2="100" stroke="rgba(139,92,246,0.4)" stroke-width="1"/>
+
+          <!-- Arrow -->
+          <text x="520" y="105" fill="#64748b" font-family="DM Sans" font-size="11">click</text>
+          <path d="M510 100 Q530 100 540 100" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3 3" fill="none"/>
+          <polygon points="540,95 552,100 540,105" fill="#64748b"/>
+
+          <!-- Code Walkthrough box -->
+          <rect x="556" y="30" width="190" height="140" rx="12" fill="#12131f" stroke="#06b6d4" stroke-width="1.5"/>
+          <text x="651" y="24" text-anchor="middle" fill="#06b6d4" font-family="JetBrains Mono" font-size="10" font-weight="600">CODE WALKTHROUGH</text>
+          <!-- Left: code -->
+          <rect x="566" y="48" width="84" height="110" rx="6" fill="#0a0a14" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+          <text x="576" y="66" fill="#8b5cf6" font-family="JetBrains Mono" font-size="7">const</text>
+          <text x="600" y="66" fill="#06b6d4" font-family="JetBrains Mono" font-size="7">login</text>
+          <text x="576" y="80" fill="#64748b" font-family="JetBrains Mono" font-size="7">  check pass</text>
+          <text x="576" y="94" fill="#64748b" font-family="JetBrains Mono" font-size="7">  create token</text>
+          <text x="576" y="108" fill="#64748b" font-family="JetBrains Mono" font-size="7">  return user</text>
+          <!-- Right: explanation -->
+          <rect x="656" y="48" width="80" height="110" rx="6" fill="rgba(6,182,212,0.06)" stroke="rgba(6,182,212,0.15)" stroke-width="1"/>
+          <text x="666" y="66" fill="#94a3b8" font-family="DM Sans" font-size="7">This checks</text>
+          <text x="666" y="78" fill="#94a3b8" font-family="DM Sans" font-size="7">your password</text>
+          <text x="666" y="90" fill="#94a3b8" font-family="DM Sans" font-size="7">then creates</text>
+          <text x="666" y="102" fill="#94a3b8" font-family="DM Sans" font-size="7">a secure key</text>
+          <text x="666" y="114" fill="#94a3b8" font-family="DM Sans" font-size="7">so you stay</text>
+          <text x="666" y="126" fill="#94a3b8" font-family="DM Sans" font-size="7">logged in.</text>
+        </svg>
+        <p class="diagram-caption">Progressive disclosure: from big-picture concepts down to individual lines of code.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ 6 — FRONTEND vs BACKEND ════════ -->
+  <section>
+    <div class="container">
+      <h2><span class="num">06</span> Two Halves: Frontend & Backend</h2>
+      <p class="section-sub">
+        Like a restaurant: the <strong>frontend</strong> is the dining room (what you see), and the <strong>backend</strong> is the kitchen (where the work happens behind the scenes).
+      </p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg">
+          <!-- Frontend box -->
+          <rect x="20" y="20" width="340" height="260" rx="16" fill="rgba(99,102,241,0.04)" stroke="#6366f1" stroke-width="1.5"/>
+          <text x="190" y="50" text-anchor="middle" fill="#6366f1" font-family="JetBrains Mono" font-size="13" font-weight="700">FRONTEND (your browser)</text>
+
+          <!-- Frontend components -->
+          <rect x="40" y="70" width="135" height="42" rx="8" fill="#1a1b2e" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <text x="107" y="96" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="11" font-weight="600">Upload Screen</text>
+
+          <rect x="195" y="70" width="145" height="42" rx="8" fill="#1a1b2e" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <text x="267" y="96" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="11" font-weight="600">Graph Canvas</text>
+
+          <rect x="40" y="128" width="135" height="42" rx="8" fill="#1a1b2e" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <text x="107" y="154" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="11" font-weight="600">Inspector Panel</text>
+
+          <rect x="195" y="128" width="145" height="42" rx="8" fill="#1a1b2e" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <text x="267" y="154" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="11" font-weight="600">Code Walkthrough</text>
+
+          <rect x="40" y="186" width="135" height="42" rx="8" fill="#1a1b2e" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <text x="107" y="212" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="11" font-weight="600">File Parser</text>
+
+          <rect x="195" y="186" width="145" height="42" rx="8" fill="#232442" stroke="rgba(245,158,11,0.3)" stroke-width="1"/>
+          <text x="267" y="208" text-anchor="middle" fill="#f59e0b" font-family="DM Sans" font-size="10" font-weight="600">Zustand Store</text>
+          <text x="267" y="222" text-anchor="middle" fill="#64748b" font-family="DM Sans" font-size="8">(shared memory)</text>
+
+          <!-- Arrow between -->
+          <line x1="370" y1="150" x2="408" y2="150" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>
+          <polygon points="406,144 418,150 406,156" fill="rgba(255,255,255,0.25)"/>
+          <line x1="418" y1="150" x2="408" y2="150" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>
+          <text x="393" y="138" text-anchor="middle" fill="#64748b" font-family="DM Sans" font-size="9">API calls</text>
+
+          <!-- Backend box -->
+          <rect x="420" y="20" width="320" height="260" rx="16" fill="rgba(6,182,212,0.04)" stroke="#06b6d4" stroke-width="1.5"/>
+          <text x="580" y="50" text-anchor="middle" fill="#06b6d4" font-family="JetBrains Mono" font-size="13" font-weight="700">BACKEND (server)</text>
+
+          <!-- Backend components -->
+          <rect x="450" y="80" width="260" height="52" rx="10" fill="#1a1b2e" stroke="rgba(6,182,212,0.2)" stroke-width="1"/>
+          <text x="580" y="102" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="12" font-weight="600">Hono Server</text>
+          <text x="580" y="120" text-anchor="middle" fill="#64748b" font-family="DM Sans" font-size="10">/api/claude endpoint</text>
+
+          <path d="M580 132 L580 155" stroke="rgba(6,182,212,0.3)" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <polygon points="575,153 580,163 585,153" fill="rgba(6,182,212,0.3)"/>
+
+          <rect x="450" y="165" width="260" height="52" rx="10" fill="#232442" stroke="rgba(139,92,246,0.3)" stroke-width="1.5"/>
+          <text x="580" y="187" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="12" font-weight="600">Claude AI (Anthropic)</text>
+          <text x="580" y="205" text-anchor="middle" fill="#64748b" font-family="DM Sans" font-size="10">reads code, returns concepts</text>
+
+          <rect x="450" y="235" width="122" height="32" rx="8" fill="#1a1b2e" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+          <text x="511" y="256" text-anchor="middle" fill="#94a3b8" font-family="DM Sans" font-size="10">Supabase DB</text>
+
+          <rect x="588" y="235" width="122" height="32" rx="8" fill="#1a1b2e" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+          <text x="649" y="256" text-anchor="middle" fill="#94a3b8" font-family="DM Sans" font-size="10">PostHog Analytics</text>
+        </svg>
+        <p class="diagram-caption">Frontend components talk to the backend server, which safely connects to external services.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ 7 — STATE MANAGEMENT ════════ -->
+  <section>
+    <div class="container">
+      <h2><span class="num">07</span> How the App Remembers Things</h2>
+      <p class="section-sub">
+        When you click a bubble or switch views, the app needs to remember what you did. That's the <strong>Zustand store</strong> — think of it as a shared whiteboard that every part of the app can read and write to.
+      </p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg">
+          <!-- Central store -->
+          <rect x="270" y="80" width="220" height="100" rx="14" fill="#232442" stroke="#f59e0b" stroke-width="2"/>
+          <text x="380" y="112" text-anchor="middle" fill="#f59e0b" font-family="JetBrains Mono" font-size="13" font-weight="700">Zustand Store</text>
+          <text x="380" y="134" text-anchor="middle" fill="#94a3b8" font-family="DM Sans" font-size="10">selectedNode</text>
+          <text x="380" y="150" text-anchor="middle" fill="#94a3b8" font-family="DM Sans" font-size="10">currentView &middot; chatHistory</text>
+          <text x="380" y="166" text-anchor="middle" fill="#94a3b8" font-family="DM Sans" font-size="10">graphData &middot; uploadedCode</text>
+
+          <!-- Readers on the left -->
+          <rect x="30" y="30" width="140" height="36" rx="8" fill="#1a1b2e" stroke="rgba(99,102,241,0.3)" stroke-width="1"/>
+          <text x="100" y="53" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="11">Graph Canvas</text>
+          <line x1="170" y1="48" x2="270" y2="105" stroke="rgba(245,158,11,0.3)" stroke-width="1.5"/>
+
+          <rect x="30" y="82" width="140" height="36" rx="8" fill="#1a1b2e" stroke="rgba(99,102,241,0.3)" stroke-width="1"/>
+          <text x="100" y="105" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="11">Inspector Panel</text>
+          <line x1="170" y1="100" x2="270" y2="120" stroke="rgba(245,158,11,0.3)" stroke-width="1.5"/>
+
+          <rect x="30" y="134" width="140" height="36" rx="8" fill="#1a1b2e" stroke="rgba(99,102,241,0.3)" stroke-width="1"/>
+          <text x="100" y="157" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="11">Walkthrough</text>
+          <line x1="170" y1="152" x2="270" y2="145" stroke="rgba(245,158,11,0.3)" stroke-width="1.5"/>
+
+          <rect x="30" y="186" width="140" height="36" rx="8" fill="#1a1b2e" stroke="rgba(99,102,241,0.3)" stroke-width="1"/>
+          <text x="100" y="209" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="11">Chat Interface</text>
+          <line x1="170" y1="204" x2="270" y2="165" stroke="rgba(245,158,11,0.3)" stroke-width="1.5"/>
+
+          <!-- Explanation -->
+          <text x="530" y="50" fill="#64748b" font-family="DM Sans" font-size="11">When you click a bubble,</text>
+          <text x="530" y="68" fill="#64748b" font-family="DM Sans" font-size="11">the store updates:</text>
+          <rect x="530" y="85" width="200" height="28" rx="6" fill="#1a1b2e" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+          <text x="540" y="104" fill="#10b981" font-family="JetBrains Mono" font-size="10">selectedNode = "Auth"</text>
+
+          <text x="530" y="138" fill="#64748b" font-family="DM Sans" font-size="11">Then ALL components react:</text>
+          <text x="540" y="158" fill="#94a3b8" font-family="DM Sans" font-size="10">Graph highlights that bubble</text>
+          <text x="540" y="176" fill="#94a3b8" font-family="DM Sans" font-size="10">Inspector shows Auth details</text>
+          <text x="540" y="194" fill="#94a3b8" font-family="DM Sans" font-size="10">Walkthrough loads Auth files</text>
+
+          <text x="380" y="248" text-anchor="middle" fill="#64748b" font-family="DM Sans" font-size="10" font-style="italic">One click, everything updates at once. That's the magic of a shared store.</text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ 8 — SMART CHOICES ════════ -->
+  <section>
+    <div class="container">
+      <h2><span class="num">08</span> Clever Design Choices</h2>
+      <p class="section-sub">
+        The creators of this app made some smart trade-offs. Here are the most interesting ones.
+      </p>
+
+      <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+        <div class="card">
+          <h3 style="color: var(--cyan);">Custom Canvas vs. Library</h3>
+          <p>Instead of using a big 23MB graph library, the team wrote their own tiny 2KB renderer using HTML5 Canvas. This means they control every glow, float animation, and pixel — like building a custom bike instead of buying one off the shelf.</p>
+        </div>
+        <div class="card">
+          <h3 style="color: var(--emerald);">Regex Instead of Parsers</h3>
+          <p>To find which files import other files, they use simple pattern-matching (regex) instead of heavy-duty code parsers. It's like scanning a book for the word "Chapter" instead of reading every sentence — fast and good enough.</p>
+        </div>
+        <div class="card">
+          <h3 style="color: var(--amber);">Demo Mode Toggle</h3>
+          <p>A feature flag lets the app run with a pre-loaded Instagram sample project. This means anyone can try the app instantly, even without an AI API key.</p>
+        </div>
+        <div class="card">
+          <h3 style="color: var(--rose);">Server as Bodyguard</h3>
+          <p>Your browser never talks directly to Claude AI. Instead, the Hono server acts as a middleman — keeping the secret API key safe on the server, never exposed to users.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ 9 — PUTTING IT ALL TOGETHER ════════ -->
+  <section>
+    <div class="container">
+      <h2><span class="num">09</span> The Full Picture</h2>
+      <p class="section-sub">
+        Here's everything connected — how a single zip upload flows through the entire system and becomes an interactive experience.
+      </p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg">
+          <!-- Title labels -->
+          <text x="380" y="22" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono" font-size="10" font-weight="600" letter-spacing="2">COMPLETE SYSTEM ARCHITECTURE</text>
+
+          <!-- User -->
+          <circle cx="80" cy="72" r="28" fill="rgba(99,102,241,0.15)" stroke="#6366f1" stroke-width="1.5"/>
+          <text x="80" y="68" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="9" font-weight="700">YOU</text>
+          <text x="80" y="80" text-anchor="middle" fill="#94a3b8" font-family="DM Sans" font-size="7">.zip file</text>
+
+          <!-- Arrow to Upload -->
+          <line x1="108" y1="72" x2="155" y2="72" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <polygon points="153,67 163,72 153,77" fill="#6366f1"/>
+
+          <!-- Upload -->
+          <rect x="165" y="50" width="110" height="44" rx="8" fill="#1a1b2e" stroke="#6366f1" stroke-width="1.2"/>
+          <text x="220" y="68" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="10" font-weight="600">Upload Screen</text>
+          <text x="220" y="82" text-anchor="middle" fill="#64748b" font-family="DM Sans" font-size="8">drag & drop</text>
+
+          <!-- Arrow to JSZip -->
+          <line x1="275" y1="72" x2="315" y2="72" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <polygon points="313,67 323,72 313,77" fill="#8b5cf6"/>
+
+          <!-- JSZip -->
+          <rect x="325" y="50" width="100" height="44" rx="8" fill="#1a1b2e" stroke="#8b5cf6" stroke-width="1.2"/>
+          <text x="375" y="68" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="10" font-weight="600">JSZip</text>
+          <text x="375" y="82" text-anchor="middle" fill="#64748b" font-family="DM Sans" font-size="8">unpack in browser</text>
+
+          <!-- Arrow to File Parser -->
+          <line x1="425" y1="72" x2="465" y2="72" stroke="#f43f5e" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <polygon points="463,67 473,72 463,77" fill="#f43f5e"/>
+
+          <!-- File Parser -->
+          <rect x="475" y="50" width="110" height="44" rx="8" fill="#1a1b2e" stroke="#f43f5e" stroke-width="1.2"/>
+          <text x="530" y="68" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="10" font-weight="600">File Parser</text>
+          <text x="530" y="82" text-anchor="middle" fill="#64748b" font-family="DM Sans" font-size="8">find imports</text>
+
+          <!-- Down arrow to Hono -->
+          <path d="M530 94 L530 130" stroke="#f43f5e" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <polygon points="525,128 530,138 535,128" fill="#f43f5e"/>
+
+          <!-- Hono Server -->
+          <rect x="430" y="140" width="200" height="50" rx="10" fill="#1a1b2e" stroke="#06b6d4" stroke-width="1.5"/>
+          <text x="530" y="162" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="11" font-weight="600">Hono Server</text>
+          <text x="530" y="178" text-anchor="middle" fill="#06b6d4" font-family="JetBrains Mono" font-size="9">/api/claude</text>
+
+          <!-- Arrow to Claude -->
+          <path d="M530 190 L530 225" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <polygon points="525,223 530,233 535,223" fill="#8b5cf6"/>
+
+          <!-- Claude AI (big) -->
+          <rect x="400" y="235" width="260" height="65" rx="12" fill="#232442" stroke="#8b5cf6" stroke-width="2"/>
+          <text x="530" y="260" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="13" font-weight="700">Claude AI</text>
+          <text x="530" y="280" text-anchor="middle" fill="#94a3b8" font-family="DM Sans" font-size="10">concepts + descriptions + relationships</text>
+          <text x="530" y="293" text-anchor="middle" fill="#64748b" font-family="DM Sans" font-size="8">claude-sonnet-4-6</text>
+
+          <!-- Arrow back up-left to Store -->
+          <path d="M400 267 L310 267 L310 210" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3" fill="none"/>
+          <polygon points="305,212 310,202 315,212" fill="#f59e0b"/>
+
+          <!-- Zustand Store -->
+          <rect x="220" y="145" width="170" height="55" rx="10" fill="#232442" stroke="#f59e0b" stroke-width="2"/>
+          <text x="305" y="168" text-anchor="middle" fill="#f59e0b" font-family="JetBrains Mono" font-size="11" font-weight="700">Zustand Store</text>
+          <text x="305" y="186" text-anchor="middle" fill="#94a3b8" font-family="DM Sans" font-size="9">single source of truth</text>
+
+          <!-- Arrow down to D3 -->
+          <path d="M305 200 L305 240" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <polygon points="300,238 305,248 310,238" fill="#10b981"/>
+
+          <!-- D3-Force -->
+          <rect x="200" y="250" width="130" height="44" rx="8" fill="#1a1b2e" stroke="#10b981" stroke-width="1.2"/>
+          <text x="265" y="268" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="10" font-weight="600">D3-Force</text>
+          <text x="265" y="282" text-anchor="middle" fill="#64748b" font-family="DM Sans" font-size="8">physics layout</text>
+
+          <!-- Arrow to Canvas -->
+          <path d="M265 294 L265 320" stroke="#06b6d4" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <polygon points="260,318 265,328 270,318" fill="#06b6d4"/>
+
+          <!-- Canvas Renderer -->
+          <rect x="180" y="330" width="170" height="44" rx="8" fill="#1a1b2e" stroke="#06b6d4" stroke-width="1.5"/>
+          <text x="265" y="348" text-anchor="middle" fill="#e2e8f0" font-family="DM Sans" font-size="10" font-weight="600">Canvas Renderer</text>
+          <text x="265" y="362" text-anchor="middle" fill="#64748b" font-family="DM Sans" font-size="8">glows, animations, interactions</text>
+
+          <!-- Arrow back to You -->
+          <path d="M180 352 L80 352 L80 105" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="4 3" fill="none"/>
+          <polygon points="75,107 80,97 85,107" fill="#6366f1"/>
+
+          <!-- You see it label -->
+          <rect x="30" y="200" width="100" height="30" rx="6" fill="rgba(99,102,241,0.1)" stroke="rgba(99,102,241,0.3)" stroke-width="1"/>
+          <text x="80" y="220" text-anchor="middle" fill="#6366f1" font-family="DM Sans" font-size="9" font-weight="600">You explore!</text>
+          <line x1="80" y1="200" x2="80" y2="145" stroke="rgba(99,102,241,0.2)" stroke-width="1" stroke-dasharray="3 3"/>
+
+          <!-- External services -->
+          <rect x="620" y="140" width="120" height="30" rx="6" fill="#1a1b2e" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+          <text x="680" y="160" text-anchor="middle" fill="#94a3b8" font-family="DM Sans" font-size="9">Supabase DB</text>
+          <line x1="630" y1="155" x2="590" y2="155" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="3 3"/>
+
+          <rect x="620" y="320" width="120" height="30" rx="6" fill="#1a1b2e" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+          <text x="680" y="340" text-anchor="middle" fill="#94a3b8" font-family="DM Sans" font-size="9">PostHog Analytics</text>
+          <line x1="620" y1="335" x2="500" y2="290" stroke="rgba(255,255,255,0.06)" stroke-width="1" stroke-dasharray="3 3"/>
+
+          <!-- Browser boundary -->
+          <rect x="10" y="38" width="600" height="68" rx="10" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1" stroke-dasharray="6 4"/>
+          <text x="15" y="36" fill="#64748b" font-family="DM Sans" font-size="8">your browser</text>
+        </svg>
+        <p class="diagram-caption">The complete loop: upload &rarr; parse &rarr; AI analysis &rarr; physics layout &rarr; render &rarr; you explore.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ 10 — TL;DR ════════ -->
+  <section>
+    <div class="container">
+      <h2><span class="num">10</span> TL;DR — The Summary</h2>
+      <p class="section-sub" style="max-width: 700px;">
+        If you only remember five things about how Codebase Explorer works, make it these:
+      </p>
+
+      <div class="card-grid" style="grid-template-columns: 1fr;">
+        <div class="card" style="display: flex; gap: 20px; align-items: flex-start;">
+          <div class="flow-marker" style="background: linear-gradient(135deg, var(--indigo), var(--cyan)); flex-shrink: 0; width: 40px; height: 40px; font-size: .85rem;">1</div>
+          <div>
+            <h3>It turns code into a map.</h3>
+            <p>Upload any zip file and get a colorful, clickable bubble diagram of how the code is organized.</p>
+          </div>
+        </div>
+        <div class="card" style="display: flex; gap: 20px; align-items: flex-start;">
+          <div class="flow-marker" style="background: linear-gradient(135deg, var(--violet), var(--rose)); flex-shrink: 0; width: 40px; height: 40px; font-size: .85rem;">2</div>
+          <div>
+            <h3>AI does the heavy lifting.</h3>
+            <p>Claude AI reads every file and figures out what concepts exist and how they connect — you don't need to know code.</p>
+          </div>
+        </div>
+        <div class="card" style="display: flex; gap: 20px; align-items: flex-start;">
+          <div class="flow-marker" style="background: linear-gradient(135deg, var(--amber), var(--orange)); flex-shrink: 0; width: 40px; height: 40px; font-size: .85rem;">3</div>
+          <div>
+            <h3>Three zoom levels.</h3>
+            <p>Concept Map (big picture) &rarr; Files View (individual files) &rarr; Code Walkthrough (actual code with explanations).</p>
+          </div>
+        </div>
+        <div class="card" style="display: flex; gap: 20px; align-items: flex-start;">
+          <div class="flow-marker" style="background: linear-gradient(135deg, var(--emerald), var(--cyan)); flex-shrink: 0; width: 40px; height: 40px; font-size: .85rem;">4</div>
+          <div>
+            <h3>Physics makes it pretty.</h3>
+            <p>D3-Force simulates magnets so related bubbles cluster together and the layout looks organic, not robotic.</p>
+          </div>
+        </div>
+        <div class="card" style="display: flex; gap: 20px; align-items: flex-start;">
+          <div class="flow-marker" style="background: linear-gradient(135deg, var(--rose), var(--violet)); flex-shrink: 0; width: 40px; height: 40px; font-size: .85rem;">5</div>
+          <div>
+            <h3>Frontend + Backend, working together.</h3>
+            <p>React draws what you see, Hono securely connects to Claude AI, Zustand keeps everything in sync, and Vite makes development lightning fast.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p style="color: var(--text-tertiary);">Codebase Explorer Architecture Guide &middot; Generated April 2026</p>
+  </footer>
+
+</body>
+</html>

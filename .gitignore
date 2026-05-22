@@ -1,0 +1,8 @@
+node_modules
+.vercel
+.env
+.env.*
+dist
+.playwright-mcp
+*.png
+*.zip
