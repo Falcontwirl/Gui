@@ -7,6 +7,7 @@ import {
   SUPPORTED_EXTENSIONS,
   type RawFunction,
 } from './astExtractor.js';
+import { runFileAnalysis } from './fileAnalysis.js';
 import { updateProgress } from './progress.js';
 
 export interface PipelineInput {
@@ -249,6 +250,21 @@ export async function runFilesystemIngest(
   // 6. Upload file contents to Storage in parallel.
   await updateProgress(projectId, 4, 'Uploading file contents…');
   await uploadFileContentsBatch(projectId, input.fileContents);
+
+  // 7. Multi-agent file analysis: each file gets a brief_summary + importance
+  // assigned by a Claude call with truncated content. Batches of 30 run 3 at a
+  // time. Per-batch progress is pushed to the SSE stream.
+  await updateProgress(projectId, 5, 'Analyzing files…');
+  const analyzableFiles = fileRows.map((row) => ({
+    id: row.id,
+    path: row.path,
+    content: input.fileContents[row.path] ?? '',
+  }));
+  try {
+    await runFileAnalysis(projectId, analyzableFiles, framework, language);
+  } catch (err) {
+    console.error('[ingest] file analysis failed (non-fatal):', err);
+  }
 
   await updateProgress(projectId, 6, 'Pipeline complete!', 'complete');
   console.log(`[ingest] project ${projectId} done in ${((Date.now() - start) / 1000).toFixed(1)}s`);

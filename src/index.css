@@ -715,6 +715,11 @@ select:focus-visible,
   animation: spin 1s linear infinite;
 }
 
+@keyframes card-load-sweep {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
 /* ==== Processing screen ==== */
 .progress-ring-circle {
   transition: stroke-dashoffset 0.8s var(--ease-out);

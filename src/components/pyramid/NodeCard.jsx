@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Folder, FileCode, Braces, FunctionSquare, Flame } from 'lucide-react';
+import useStore from '../../store/useStore';
 
 const KIND_STYLE = {
   folder: { color: '#6366f1', Icon: Folder, label: 'Folder' },
@@ -35,6 +36,8 @@ export default function NodeCard({ node, index = 0, onClick }) {
   const style = KIND_STYLE[node.kind] ?? KIND_STYLE.folder;
   const { color, Icon } = style;
   const importance = node.importance && IMPORTANCE[node.importance] ? IMPORTANCE[node.importance] : null;
+  // Loading if the prefetcher (or a user click) is currently fetching this node's description.
+  const loading = useStore((s) => s.nodesLoading.has(node.id));
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -66,8 +69,25 @@ export default function NodeCard({ node, index = 0, onClick }) {
         animation: `fade-in 0.45s ease-out ${Math.min(index, 18) * 0.04}s both`,
         minHeight: 100,
         opacity: cardOpacity,
+        overflow: 'hidden',
       }}
     >
+      {loading && (
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 2,
+            background: `linear-gradient(90deg, transparent 0%, ${color} 40%, ${color} 60%, transparent 100%)`,
+            backgroundSize: '200% 100%',
+            animation: 'card-load-sweep 1.4s linear infinite',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
       {importance && (
         <span
           style={{
