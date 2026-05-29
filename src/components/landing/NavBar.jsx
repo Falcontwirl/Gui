@@ -101,7 +101,7 @@ export default function NavBar({ onGetStarted, scrolled }) {
         >
           <Compass size={16} strokeWidth={2} color="var(--color-text-inverse)" />
         </div>
-        <span>Codebase Explorer</span>
+        <span>Gui</span>
       </button>
 
       {/* Desktop links */}

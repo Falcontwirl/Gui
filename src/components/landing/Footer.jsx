@@ -28,7 +28,7 @@ export default function Footer() {
             <div style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', background: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Compass size={13} strokeWidth={2} color="var(--color-text-inverse)" />
             </div>
-            Codebase Explorer
+            Gui
           </div>
           <p style={{ color: 'var(--color-text-tertiary)', fontSize: '.85rem', lineHeight: 1.6 }}>Understand any codebase in minutes. Built for developers, not just classrooms.</p>
         </div>
@@ -71,7 +71,7 @@ export default function Footer() {
         textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: '.8rem',
         paddingTop: '1.5rem', borderTop: '1px solid var(--color-border-subtle)',
       }}>
-        © 2026 Codebase Explorer. All rights reserved.
+        © 2026 Gui. All rights reserved.
       </div>
     </footer>
   );

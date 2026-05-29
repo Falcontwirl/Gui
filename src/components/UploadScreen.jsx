@@ -98,7 +98,7 @@ export default function UploadScreen() {
       display: 'flex', flexDirection: 'column',
       background: 'var(--color-bg-base)',
     }}>
-      <BackBar to="/" label="Codebase Explorer" />
+      <BackBar to="/" label="Gui" />
 
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
