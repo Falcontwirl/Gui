@@ -53,25 +53,63 @@ app.post('/analyze', async (c) => {
   }
 
   try {
-    // Download the repo as a zip from GitHub.
-    // Anonymous requests to public repos are allowed (rate-limited to 60/hr/IP).
-    const zipUrl = `https://api.github.com/repos/${repoFullName}/zipball/${ref || 'HEAD'}`;
+    // Resolve auth: user token first, then optional server-side PAT fallback.
+    // The fallback lets anonymous users analyze public repos without hitting
+    // GitHub's 60/hr/IP anonymous rate limit.
+    const token = accessToken || process.env.GITHUB_TOKEN || null;
     const headers: Record<string, string> = {
       Accept: 'application/vnd.github.v3+json',
       'User-Agent': 'codebase-explorer',
     };
-    if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+    if (token) headers.Authorization = `Bearer ${token}`;
 
+    // Two-step: probe the repo to confirm it exists and pick a real default
+    // branch, then download. This lets us return precise error messages and
+    // avoid spurious 404s when the pasted URL has no ref (e.g. main vs master).
+    const probeRes = await fetch(`https://api.github.com/repos/${repoFullName}`, { headers });
+    if (!probeRes.ok) {
+      const errText = await probeRes.text().catch(() => '');
+      console.error('GitHub repo probe failed:', probeRes.status, errText);
+      if (probeRes.status === 404) {
+        return c.json({
+          error: token
+            ? 'Repository not found. Check the URL — if it is private, your GitHub account may not have access.'
+            : 'Repository not found. If it is private, sign in with GitHub to continue.',
+        }, 404);
+      }
+      if (probeRes.status === 401) {
+        return c.json({ error: 'GitHub authentication failed. Sign out and back in to refresh your token.' }, 401);
+      }
+      if (probeRes.status === 403) {
+        const remaining = probeRes.headers.get('x-ratelimit-remaining');
+        if (remaining === '0') {
+          return c.json({
+            error: token
+              ? 'GitHub rate limit reached. Try again later.'
+              : 'GitHub anonymous rate limit reached (60/hr). Sign in with GitHub or set GITHUB_TOKEN on the server.',
+          }, 403);
+        }
+        return c.json({ error: 'GitHub returned 403. The repo may require additional permissions.' }, 403);
+      }
+      return c.json({ error: `GitHub responded ${probeRes.status} when fetching the repo.` }, 502);
+    }
+
+    const repoInfo = (await probeRes.json().catch(() => ({}))) as { default_branch?: string };
+    const effectiveRef = ref || repoInfo.default_branch || 'HEAD';
+
+    const zipUrl = `https://api.github.com/repos/${repoFullName}/zipball/${effectiveRef}`;
     const zipRes = await fetch(zipUrl, { headers, redirect: 'follow' });
 
     if (!zipRes.ok) {
-      const errText = await zipRes.text();
+      const errText = await zipRes.text().catch(() => '');
       console.error('GitHub zip download failed:', zipRes.status, errText);
       if (zipRes.status === 404) {
-        return c.json({ error: 'Repository not found. If it is private, sign in with GitHub to continue.' }, 404);
+        return c.json({
+          error: `Branch or ref "${effectiveRef}" not found on ${repoFullName}.`,
+        }, 404);
       }
       if (zipRes.status === 403) {
-        return c.json({ error: 'GitHub rate limit reached. Sign in with GitHub to bypass the anonymous limit.' }, 403);
+        return c.json({ error: 'GitHub rate limit reached during download.' }, 403);
       }
       return c.json({ error: `Failed to download repo: ${zipRes.status}` }, 502);
     }
