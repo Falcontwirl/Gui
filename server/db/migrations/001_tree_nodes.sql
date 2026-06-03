@@ -29,7 +29,9 @@ create table if not exists tree_nodes (
   raw_functions jsonb,
   function_blocks jsonb,
   function_block_details jsonb default '{}'::jsonb,
+  external_imports jsonb,
   brief_summary text,
+  importance text,
   zone1_description text,
   generated_at timestamptz,
   language text,
@@ -37,6 +39,10 @@ create table if not exists tree_nodes (
   created_at timestamptz default now(),
   unique (project_id, path)
 );
+
+-- Bring older databases up to date.
+alter table tree_nodes add column if not exists external_imports jsonb;
+alter table tree_nodes add column if not exists importance text;
 
 create index if not exists tree_nodes_project_parent_idx
   on tree_nodes (project_id, parent_id);
