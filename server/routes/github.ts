@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { supabase } from '../db/supabase.js';
 import { runPipeline } from '../pipeline/orchestrator.js';
+import { keepAlive } from '../lib/keepAlive.js';
 import JSZip from 'jszip';
 
 const app = new Hono();
@@ -176,10 +177,15 @@ app.post('/analyze', async (c) => {
       return c.json({ error: 'Failed to create project' }, 500);
     }
 
-    // Start pipeline in background
-    runPipeline(project.id, { fileTree: null, fileContents }).catch((err) => {
-      console.error('Pipeline failed:', err);
-    });
+    // Start pipeline in background. keepAlive tells the Vercel runtime not to
+    // suspend the function after the response is sent so the promise can run
+    // to completion (up to maxDuration). On non-Vercel environments it's a
+    // no-op and the long-lived server keeps the promise alive naturally.
+    keepAlive(
+      runPipeline(project.id, { fileTree: null, fileContents }).catch((err) => {
+        console.error('Pipeline failed:', err);
+      }),
+    );
 
     return c.json({ projectId: project.id, cached: false });
   } catch (err: any) {

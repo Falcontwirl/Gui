@@ -3,6 +3,7 @@ import { streamSSE } from 'hono/streaming';
 import { supabase } from '../db/supabase.js';
 import { deleteProjectFiles, recoverFileContents } from '../db/fileStorage.js';
 import { runPipeline } from '../pipeline/orchestrator.js';
+import { keepAlive } from '../lib/keepAlive.js';
 
 const app = new Hono();
 
@@ -70,9 +71,11 @@ app.post('/start', async (c) => {
     return c.json({ error: 'Failed to create project' }, 500);
   }
 
-  runPipeline(project.id, { fileTree, fileContents: fileContents || {} }).catch((err) => {
-    console.error('Pipeline failed:', err);
-  });
+  keepAlive(
+    runPipeline(project.id, { fileTree, fileContents: fileContents || {} }).catch((err) => {
+      console.error('Pipeline failed:', err);
+    }),
+  );
 
   return c.json({ projectId: project.id, cached: false });
 });
@@ -121,9 +124,11 @@ app.post('/:id/rerun', async (c) => {
     .update({ pipeline_status: 'pending', pipeline_progress: null })
     .eq('id', projectId);
 
-  runPipeline(projectId, { fileTree: null, fileContents }).catch((err) => {
-    console.error('Rerun failed:', err);
-  });
+  keepAlive(
+    runPipeline(projectId, { fileTree: null, fileContents }).catch((err) => {
+      console.error('Rerun failed:', err);
+    }),
+  );
 
   return c.json({ success: true, projectId });
 });
