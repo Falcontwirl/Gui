@@ -1,9 +1,8 @@
 // Vercel serverless function entrypoint.
-// Mirrors server/index.ts but exports a Node-style (req, res) handler instead
-// of starting a Node listener. Routed here via vercel.json's /api/(.*) rewrite.
+// Mirrors server/index.ts but exports a Web Standard fetch handler instead of
+// starting a Node listener. Routed here via vercel.json's /api/(.*) rewrite.
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { getRequestListener } from '@hono/node-server';
 
 import pipelineRoutes from '../server/routes/pipeline.js';
 import nodeRoutes from '../server/routes/node.js';
@@ -33,4 +32,4 @@ app.route('/api/github', githubRoutes);
 app.route('/api/share', shareRoutes);
 app.route('/api/admin', adminRoutes);
 
-export default getRequestListener(app.fetch);
+export default app.fetch;
