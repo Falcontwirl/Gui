@@ -26,6 +26,27 @@ app.use('*', cors({
 }));
 
 app.get('/api/health', (c) => c.json({ status: 'ok' }));
+
+// One-shot diagnostic so we can verify WASMs were bundled by includeFiles.
+app.get('/api/_debug/wasms', async (c) => {
+  const fs = await import('node:fs/promises');
+  const path = await import('node:path');
+  const candidates = [
+    'node_modules/tree-sitter-wasms/out',
+    'node_modules/web-tree-sitter',
+  ];
+  const out: Record<string, unknown> = { cwd: process.cwd() };
+  for (const rel of candidates) {
+    const abs = path.resolve(rel);
+    try {
+      const entries = await fs.readdir(abs);
+      out[rel] = entries.filter((e) => e.endsWith('.wasm') || e === 'lib');
+    } catch (err) {
+      out[rel] = { error: (err as Error).message };
+    }
+  }
+  return c.json(out);
+});
 app.route('/api/pipeline', pipelineRoutes);
 app.route('/api/node', nodeRoutes);
 app.route('/api/chat', chatRoutes);
